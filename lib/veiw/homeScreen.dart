@@ -1,8 +1,9 @@
 import 'package:android_intent/android_intent.dart';
-import 'package:device_apps/device_apps.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:device_apps/device_apps.dart';
+
 import 'package:minimalist/veiw/appsScreen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -44,7 +45,7 @@ class _HomeScreenState extends State<HomeScreen>
     print("Long press completed after $loadingDuration seconds");
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => AppScreen()),
+      _createPageRoute(),
     );
   }
 
@@ -82,6 +83,26 @@ class _HomeScreenState extends State<HomeScreen>
         throw 'Could not launch $url';
       }
     }
+  }
+
+  Route _createPageRoute() {
+    return PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => AppScreen(),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        const begin = Offset(1.0, 0.0);
+        const end = Offset.zero;
+        const curve = Curves.ease;
+
+        final tween =
+            Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+        final offsetAnimation = animation.drive(tween);
+
+        return SlideTransition(
+          position: offsetAnimation,
+          child: child,
+        );
+      },
+    );
   }
 
   @override
