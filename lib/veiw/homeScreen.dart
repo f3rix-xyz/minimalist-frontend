@@ -1,8 +1,10 @@
-import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:device_apps/device_apps.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:android_intent/android_intent.dart';
+import 'package:device_apps/device_apps.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
+import 'package:minimalist/veiw/appsScreen.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -40,6 +42,10 @@ class _HomeScreenState extends State<HomeScreen>
 
   void _onLongPressComplete() {
     print("Long press completed after $loadingDuration seconds");
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => AppScreen()),
+    );
   }
 
   void _startLoading() {
@@ -69,7 +75,6 @@ class _HomeScreenState extends State<HomeScreen>
       await intent.launch();
     } else {
       // Open contacts URL if available
-
       const url = 'content://contacts/people/';
       if (await canLaunchUrl(Uri.parse(url))) {
         await launchUrl(Uri.parse(url));
