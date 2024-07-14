@@ -1,39 +1,36 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
 import 'package:minimalist/models/user.dart';
 
 class UserRepository {
   final _myBox = Hive.box('myBox');
+  static const String baseUrl = 'http://10.61.36.108:3000';
+
   Future<User?> fetchUser() async {
-    final url = Uri.parse('http://localhost:3000/getUser');
+    final url = Uri.parse('$baseUrl/getUser');
 
     try {
       final response = await http.get(url, headers: {
         'Authorization': 'Bearer ${_myBox.get('token')}',
         'Content-Type': 'application/json',
       });
-      if (response.statusCode == 200) {
-        // If the server returns a successful response, parse the JSON
-        final jsonBody = jsonDecode(response.body);
-        return User.fromJson(jsonBody['user']);
-      } else {
-        // Handle other status codes as needed
-        print('Failed to load user data, status code: ${response.statusCode}');
-        return null;
-      }
+      final responseBody = jsonDecode(response.body);
+      return responseBody['user'] != null
+          ? User.fromJson(responseBody['user'])
+          : null;
     } catch (e) {
-      print('Error fetching user data: $e');
-      return null;
+      throw Exception('problem while sending request to server');
     }
   }
 
-  Future<void> createUser({
+  Future<dynamic> createUser({
     required String phone,
     required String otp,
     required String name,
   }) async {
-    final url = Uri.parse('http://localhost:3000/createUser');
+    final url = Uri.parse('$baseUrl/createUser');
 
     final body = jsonEncode({
       'phone': phone,
@@ -49,26 +46,63 @@ class UserRepository {
         },
         body: body,
       );
+      final responseBody = jsonDecode(response.body);
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final responseBody = jsonDecode(response.body);
+      if (response.statusCode == 200) {
         final token = responseBody['token'];
+
+        // Store the token in Hive
         _myBox.put('token', token);
-        print('User created successfully and token saved to Hive box.');
+        return responseBody;
       } else {
-        print('Failed to create user, status code: ${response.statusCode}');
-        print('Response body: ${response.body}');
+        throw Exception(responseBody['error']);
       }
     } catch (e) {
-      print('Error creating user: $e');
+      if (e is SocketException) {
+        throw Exception('problem while sending request to server');
+      }
     }
   }
 
-  Future<void> loginUser({
+  Future<dynamic> reqOTP({
+    required String phone,
+    required String process,
+  }) async {
+    final url = Uri.parse('$baseUrl/reqOTP');
+
+    final body = jsonEncode({
+      'phone': phone,
+      'process': process,
+    });
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: body,
+      );
+
+      final responseBody = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        return responseBody;
+      } else {
+        throw Exception(responseBody['error']);
+      }
+    } catch (e) {
+      if (e is SocketException) {
+        throw Exception('please check your network connection');
+      }
+      throw Exception('problem while sending request to server');
+    }
+  }
+
+  Future<dynamic> loginUser({
     required String phone,
     required String otp,
   }) async {
-    final url = Uri.parse('http://localhost:3000/login');
+    final url = Uri.parse('$baseUrl/login');
 
     final body = jsonEncode({
       'phone': phone,
@@ -84,20 +118,19 @@ class UserRepository {
         body: body,
       );
 
+      final responseBody = jsonDecode(response.body);
+
       if (response.statusCode == 200) {
-        final responseBody = jsonDecode(response.body);
         final token = responseBody['token'];
 
         // Store the token in Hive
         _myBox.put('token', token);
-
-        print('Login successful and token stored.');
+        return responseBody;
       } else {
-        print('Failed to login, status code: ${response.statusCode}');
-        print('Response body: ${response.body}');
+        throw Exception(responseBody['error']);
       }
     } catch (e) {
-      print('Error logging in: $e');
+      throw Exception('problem while sending request to server: $e');
     }
   }
 }
