@@ -21,15 +21,22 @@ class _LoginScreenState extends State<LoginScreen> {
       try {
         final userRepository =
             Provider.of<UserRepository>(context, listen: false);
-        await userRepository.reqOTP(phone: "+91$phone", process: 'login');
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) =>
-                OtpScreen(phone: "+91$phone", process: 'login'),
-          ),
-        );
+        final responseBody =
+            await userRepository.reqOTP(phone: "+91$phone", process: 'login');
+        print(responseBody['error']);
+        if (responseBody['error'] == null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) =>
+                  OtpScreen(phone: "+91$phone", process: 'login'),
+            ),
+          );
+        } else {
+          setState(() {
+            _errorMessage = responseBody['error'];
+          });
+        }
       } catch (e) {
         setState(() {
           _errorMessage = e.toString();

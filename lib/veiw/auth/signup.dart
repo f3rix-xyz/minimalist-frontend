@@ -23,15 +23,22 @@ class _SignupScreenState extends State<SignupScreen> {
       try {
         final userRepository =
             Provider.of<UserRepository>(context, listen: false);
-        await userRepository.reqOTP(phone: phone, process: 'signup');
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) =>
-                OtpScreen(name: name, phone: phone, process: 'signup'),
-          ),
-        );
+        final responseBody =
+            await userRepository.reqOTP(phone: phone, process: 'signup');
+        print(responseBody['error']);
+        if (responseBody['error'] == null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) =>
+                  OtpScreen(name: name, phone: phone, process: 'signup'),
+            ),
+          );
+        } else {
+          setState(() {
+            _errorMessage = responseBody['error'];
+          });
+        }
       } catch (e) {
         setState(() {
           _errorMessage = e.toString();

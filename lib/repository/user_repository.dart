@@ -21,6 +21,9 @@ class UserRepository {
           ? User.fromJson(responseBody['user'])
           : null;
     } catch (e) {
+      if (e is SocketException) {
+        throw Exception('please check your network connection');
+      }
       throw Exception('problem while sending request to server');
     }
   }
@@ -53,14 +56,13 @@ class UserRepository {
 
         // Store the token in Hive
         _myBox.put('token', token);
-        return responseBody;
-      } else {
-        throw Exception(responseBody['error']);
       }
+      return responseBody;
     } catch (e) {
       if (e is SocketException) {
-        throw Exception('problem while sending request to server');
+        throw Exception('please check your network connection');
       }
+      throw Exception('problem while sending request to server');
     }
   }
 
@@ -85,11 +87,8 @@ class UserRepository {
       );
 
       final responseBody = jsonDecode(response.body);
-      if (response.statusCode == 200) {
-        return responseBody;
-      } else {
-        throw Exception(responseBody['error']);
-      }
+
+      return responseBody;
     } catch (e) {
       if (e is SocketException) {
         throw Exception('please check your network connection');
@@ -125,10 +124,8 @@ class UserRepository {
 
         // Store the token in Hive
         _myBox.put('token', token);
-        return responseBody;
-      } else {
-        throw Exception(responseBody['error']);
       }
+      return responseBody;
     } catch (e) {
       throw Exception('problem while sending request to server: $e');
     }
