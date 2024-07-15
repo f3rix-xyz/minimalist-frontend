@@ -1,48 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:minimalist/blocs/error/error_bloc.dart';
+import 'package:minimalist/repository/otp_repository.dart';
 import 'package:minimalist/repository/user_repository.dart';
-import 'package:minimalist/veiw/auth/login.dart';
-import 'package:minimalist/veiw/auth/otp.dart';
-import 'package:provider/provider.dart';
+import 'package:minimalist/veiw/auth/otp_view.dart';
+import 'package:minimalist/veiw/auth/signup_view.dart';
 
-class SignupScreen extends StatefulWidget {
+class LoginScreen extends StatefulWidget {
   @override
-  _SignupScreenState createState() => _SignupScreenState();
+  _LoginScreenState createState() => _LoginScreenState();
 }
 
-class _SignupScreenState extends State<SignupScreen> {
-  final _nameController = TextEditingController();
+class _LoginScreenState extends State<LoginScreen> {
   final _phoneController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  String? _errorMessage;
 
   void _submit() async {
     if (_formKey.currentState?.validate() ?? false) {
-      final name = _nameController.text;
       final phone = _phoneController.text;
 
+      context.read<ErrorBloc>().add(ClearError());
       try {
-        final userRepository =
-            Provider.of<UserRepository>(context, listen: false);
-        final responseBody =
-            await userRepository.reqOTP(phone: phone, process: 'signup');
-        print(responseBody['error']);
-        if (responseBody['error'] == null) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) =>
-                  OtpScreen(name: name, phone: phone, process: 'signup'),
-            ),
-          );
-        } else {
-          setState(() {
-            _errorMessage = responseBody['error'];
-          });
-        }
+        await otpRepository(
+            context: context, process: 'login', phone: '+91' + phone);
+        // Handle success scenario
       } catch (e) {
-        setState(() {
-          _errorMessage = e.toString();
-        });
+        // Set error on failure
+        context.read<ErrorBloc>().add(SetError(e.toString()));
       }
     }
   }
@@ -59,28 +43,6 @@ class _SignupScreenState extends State<SignupScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              SizedBox(height: 60), // Increased space between elements
-              TextFormField(
-                controller: _nameController,
-                decoration: InputDecoration(
-                  labelText: 'Name',
-                  labelStyle: TextStyle(color: Colors.white),
-                  enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Colors.white),
-                  ),
-                  focusedBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Colors.white),
-                  ),
-                ),
-                style: TextStyle(color: Colors.white),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Name is required';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 20),
               TextFormField(
                 controller: _phoneController,
                 decoration: InputDecoration(
@@ -104,7 +66,8 @@ class _SignupScreenState extends State<SignupScreen> {
                   return null;
                 },
               ),
-              SizedBox(height: 40), // Increased space between elements
+              SizedBox(
+                  height: 60), // Increased space between text field and button
               OutlinedButton(
                 onPressed: _submit,
                 child: Text('Submit', style: TextStyle(color: Colors.white)),
@@ -113,22 +76,29 @@ class _SignupScreenState extends State<SignupScreen> {
                   padding: EdgeInsets.symmetric(vertical: 16.0),
                 ),
               ),
-              if (_errorMessage != null) ...[
-                SizedBox(height: 10),
-                Text(
-                  _errorMessage!,
-                  style: TextStyle(color: Colors.red),
-                ),
-              ],
+              BlocBuilder<ErrorBloc, ErrorState>(
+                builder: (context, state) {
+                  if (state is ErrorMessage) {
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 10.0),
+                      child: Text(
+                        state.message,
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    );
+                  }
+                  return SizedBox.shrink();
+                },
+              ),
               SizedBox(height: 20),
               TextButton(
                 onPressed: () {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (context) => LoginScreen()),
+                    MaterialPageRoute(builder: (context) => SignupScreen()),
                   );
                 },
-                child: Text('Already have an account? Login',
+                child: Text('Create an account',
                     style: TextStyle(color: Colors.white)),
               ),
             ],

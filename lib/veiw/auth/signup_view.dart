@@ -1,46 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:minimalist/blocs/error/error_bloc.dart';
+import 'package:minimalist/repository/otp_repository.dart';
 import 'package:minimalist/repository/user_repository.dart';
-import 'package:minimalist/veiw/auth/otp.dart';
-import 'package:minimalist/veiw/auth/signup.dart';
-import 'package:provider/provider.dart';
+import 'package:minimalist/veiw/auth/login_view.dart';
+import 'package:minimalist/veiw/auth/otp_view.dart';
+import 'package:provider/provider.dart'; // Import your ErrorBloc
 
-class LoginScreen extends StatefulWidget {
+class SignupScreen extends StatefulWidget {
   @override
-  _LoginScreenState createState() => _LoginScreenState();
+  _SignupScreenState createState() => _SignupScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _SignupScreenState extends State<SignupScreen> {
+  final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  String? _errorMessage;
 
   void _submit() async {
     if (_formKey.currentState?.validate() ?? false) {
+      final name = _nameController.text;
       final phone = _phoneController.text;
 
+      context.read<ErrorBloc>().add(ClearError());
       try {
-        final userRepository =
-            Provider.of<UserRepository>(context, listen: false);
-        final responseBody =
-            await userRepository.reqOTP(phone: "+91$phone", process: 'login');
-        print(responseBody['error']);
-        if (responseBody['error'] == null) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) =>
-                  OtpScreen(phone: "+91$phone", process: 'login'),
-            ),
-          );
-        } else {
-          setState(() {
-            _errorMessage = responseBody['error'];
-          });
-        }
+        await otpRepository(
+          context: context,
+          process: "signup",
+          name: name,
+          phone: '+91' + phone,
+        );
+        // Clear error on success
       } catch (e) {
-        setState(() {
-          _errorMessage = e.toString();
-        });
+        // Set error on failure
+        context.read<ErrorBloc>().add(SetError(e.toString()));
       }
     }
   }
@@ -57,6 +50,28 @@ class _LoginScreenState extends State<LoginScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              SizedBox(height: 60),
+              TextFormField(
+                controller: _nameController,
+                decoration: InputDecoration(
+                  labelText: 'Name',
+                  labelStyle: TextStyle(color: Colors.white),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white),
+                  ),
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.white),
+                  ),
+                ),
+                style: TextStyle(color: Colors.white),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Name is required';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 20),
               TextFormField(
                 controller: _phoneController,
                 decoration: InputDecoration(
@@ -80,8 +95,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   return null;
                 },
               ),
-              SizedBox(
-                  height: 60), // Increased space between text field and button
+              SizedBox(height: 40),
               OutlinedButton(
                 onPressed: _submit,
                 child: Text('Submit', style: TextStyle(color: Colors.white)),
@@ -90,22 +104,29 @@ class _LoginScreenState extends State<LoginScreen> {
                   padding: EdgeInsets.symmetric(vertical: 16.0),
                 ),
               ),
-              if (_errorMessage != null) ...[
-                SizedBox(height: 10),
-                Text(
-                  _errorMessage!,
-                  style: TextStyle(color: Colors.red),
-                ),
-              ],
+              BlocBuilder<ErrorBloc, ErrorState>(
+                builder: (context, state) {
+                  if (state is ErrorMessage) {
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 10.0),
+                      child: Text(
+                        state.message,
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    );
+                  }
+                  return SizedBox.shrink();
+                },
+              ),
               SizedBox(height: 20),
               TextButton(
                 onPressed: () {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (context) => SignupScreen()),
+                    MaterialPageRoute(builder: (context) => LoginScreen()),
                   );
                 },
-                child: Text('Create an account',
+                child: Text('Already have an account? Login',
                     style: TextStyle(color: Colors.white)),
               ),
             ],

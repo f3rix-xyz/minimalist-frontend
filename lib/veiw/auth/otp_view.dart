@@ -1,7 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:minimalist/blocs/error/error_bloc.dart';
+
+import 'package:minimalist/repository/login_respository.dart';
+import 'package:minimalist/repository/signup_repository.dart';
 import 'package:minimalist/repository/user_repository.dart';
 import 'package:minimalist/veiw/homeScreen.dart';
-import 'package:provider/provider.dart';
 
 class OtpScreen extends StatefulWidget {
   final String? name;
@@ -17,39 +22,31 @@ class OtpScreen extends StatefulWidget {
 class _OtpScreenState extends State<OtpScreen> {
   final _otpController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-  String? _errorMessage;
 
   void _submit() async {
     if (_formKey.currentState?.validate() ?? false) {
       final otp = _otpController.text;
 
+      context.read<ErrorBloc>().add(ClearError());
       try {
-        final userRepository =
-            Provider.of<UserRepository>(context, listen: false);
-
         if (widget.process == 'signup') {
-          await userRepository.createUser(
-            phone: widget.phone,
-            otp: otp,
+          await signupRepository(
+            context: context,
             name: widget.name!,
-          );
-        } else if (widget.process == 'login') {
-          await userRepository.loginUser(
-            phone: widget.phone,
             otp: otp,
+            phone: widget.phone,
+          );
+        } else {
+          await loginRepository(
+            context: context,
+            otp: otp,
+            phone: widget.phone,
           );
         }
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-              builder: (context) =>
-                  HomeScreen()), // Replace HomeScreen() with your home screen widget
-        );
+        // Handle success scenario
       } catch (e) {
-        setState(() {
-          _errorMessage = e.toString();
-        });
+        // Set error on failure
+        context.read<ErrorBloc>().add(SetError(e.toString()));
       }
     }
   }
@@ -99,13 +96,20 @@ class _OtpScreenState extends State<OtpScreen> {
                   padding: EdgeInsets.symmetric(vertical: 16.0),
                 ),
               ),
-              if (_errorMessage != null) ...[
-                SizedBox(height: 10),
-                Text(
-                  _errorMessage!,
-                  style: TextStyle(color: Colors.red),
-                ),
-              ],
+              BlocBuilder<ErrorBloc, ErrorState>(
+                builder: (context, state) {
+                  if (state is ErrorMessage) {
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 10.0),
+                      child: Text(
+                        state.message,
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    );
+                  }
+                  return SizedBox.shrink();
+                },
+              ),
             ],
           ),
         ),
