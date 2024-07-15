@@ -4,6 +4,7 @@ import 'package:hive/hive.dart';
 import 'package:minimalist/blocs/error/error_bloc.dart';
 import 'package:minimalist/data/api.dart';
 import 'package:minimalist/veiw/homeScreen.dart';
+import 'package:minimalist/veiw/subscriptionScreen.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
 
@@ -24,7 +25,7 @@ Future<void> loginRepository(
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => HomeScreen(),
+          builder: (context) => SubscriptionScreen(),
         ),
       );
     } else {

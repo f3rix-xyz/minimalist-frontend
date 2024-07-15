@@ -3,7 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:minimalist/blocs/error/error_bloc.dart';
 
+import 'package:minimalist/blocs/otpTimer/timer_bloc.dart';
+import 'package:minimalist/blocs/otpTimer/timer_event.dart';
+import 'package:minimalist/blocs/otpTimer/timer_state.dart';
 import 'package:minimalist/repository/login_respository.dart';
+import 'package:minimalist/repository/otp_repository.dart';
 import 'package:minimalist/repository/signup_repository.dart';
 import 'package:minimalist/repository/user_repository.dart';
 import 'package:minimalist/veiw/homeScreen.dart';
@@ -51,6 +55,34 @@ class _OtpScreenState extends State<OtpScreen> {
     }
   }
 
+  void _resendOtp() async {
+    context.read<ErrorBloc>().add(ClearError());
+    try {
+      await otpRepository(
+        context: context,
+        process: widget.process,
+        phone: widget.phone,
+      );
+      context.read<OtpBloc>().add(StartTimer());
+      // Handle success scenario
+    } catch (e) {
+      // Set error on failure
+      context.read<ErrorBloc>().add(SetError(e.toString()));
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    context.read<OtpBloc>().add(StartTimer());
+  }
+
+  @override
+  void dispose() {
+    _otpController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -95,6 +127,37 @@ class _OtpScreenState extends State<OtpScreen> {
                   side: BorderSide(color: Colors.white),
                   padding: EdgeInsets.symmetric(vertical: 16.0),
                 ),
+              ),
+              SizedBox(height: 20),
+              BlocBuilder<OtpBloc, OtpState>(
+                builder: (context, state) {
+                  if (state is TimerRunInProgress) {
+                    return OutlinedButton(
+                      onPressed: null,
+                      child: Text(
+                        'Resend in ${state.duration} seconds',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: Colors.white),
+                        padding: EdgeInsets.symmetric(vertical: 16.0),
+                      ),
+                    );
+                  } else if (state is TimerRunComplete) {
+                    return OutlinedButton(
+                      onPressed: _resendOtp,
+                      child: Text(
+                        'Resend OTP',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: Colors.white),
+                        padding: EdgeInsets.symmetric(vertical: 16.0),
+                      ),
+                    );
+                  }
+                  return SizedBox.shrink();
+                },
               ),
               BlocBuilder<ErrorBloc, ErrorState>(
                 builder: (context, state) {
