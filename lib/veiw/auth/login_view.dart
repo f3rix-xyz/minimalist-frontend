@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:minimalist/blocs/error/error_bloc.dart';
+import 'package:minimalist/blocs/loading/loading_bloc.dart';
 import 'package:minimalist/repository/otp_repository.dart';
-import 'package:minimalist/repository/user_repository.dart';
-import 'package:minimalist/veiw/auth/otp_view.dart';
 import 'package:minimalist/veiw/auth/signup_view.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -20,13 +19,15 @@ class _LoginScreenState extends State<LoginScreen> {
       final phone = _phoneController.text;
 
       context.read<ErrorBloc>().add(ClearError());
+      context.read<LoadingBloc>().add(StartLoading());
+
       try {
         await otpRepository(
             context: context, process: 'login', phone: '+91' + phone);
-        // Handle success scenario
       } catch (e) {
-        // Set error on failure
         context.read<ErrorBloc>().add(SetError(e.toString()));
+      } finally {
+        context.read<LoadingBloc>().add(StopLoading());
       }
     }
   }
@@ -66,15 +67,22 @@ class _LoginScreenState extends State<LoginScreen> {
                   return null;
                 },
               ),
-              SizedBox(
-                  height: 60), // Increased space between text field and button
-              OutlinedButton(
-                onPressed: _submit,
-                child: Text('Submit', style: TextStyle(color: Colors.white)),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: Colors.white),
-                  padding: EdgeInsets.symmetric(vertical: 16.0),
-                ),
+              SizedBox(height: 60),
+              BlocBuilder<LoadingBloc, LoadingState>(
+                builder: (context, state) {
+                  if (state is LoadingInProgress) {
+                    return Center(child: CircularProgressIndicator());
+                  }
+                  return OutlinedButton(
+                    onPressed: _submit,
+                    child:
+                        Text('Submit', style: TextStyle(color: Colors.white)),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: Colors.white),
+                      padding: EdgeInsets.symmetric(vertical: 16.0),
+                    ),
+                  );
+                },
               ),
               BlocBuilder<ErrorBloc, ErrorState>(
                 builder: (context, state) {
@@ -93,6 +101,8 @@ class _LoginScreenState extends State<LoginScreen> {
               SizedBox(height: 20),
               TextButton(
                 onPressed: () {
+                  context.read<ErrorBloc>().add(ClearError());
+
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (context) => SignupScreen()),
@@ -107,4 +117,18 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
+}
+
+void main() {
+  runApp(
+    MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (context) => ErrorBloc()),
+        BlocProvider(create: (context) => LoadingBloc()),
+      ],
+      child: MaterialApp(
+        home: LoginScreen(),
+      ),
+    ),
+  );
 }

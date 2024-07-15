@@ -25,7 +25,7 @@ Future<void> loginRepository(
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => SubscriptionScreen(),
+          builder: (context) => HomeScreen(),
         ),
       );
     } else {

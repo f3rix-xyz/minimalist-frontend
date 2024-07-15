@@ -1,8 +1,8 @@
-import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:minimalist/blocs/error/error_bloc.dart';
-
+import 'package:minimalist/blocs/loading/loading_bloc.dart';
 import 'package:minimalist/blocs/otpTimer/timer_bloc.dart';
 import 'package:minimalist/blocs/otpTimer/timer_event.dart';
 import 'package:minimalist/blocs/otpTimer/timer_state.dart';
@@ -10,7 +10,6 @@ import 'package:minimalist/repository/login_respository.dart';
 import 'package:minimalist/repository/otp_repository.dart';
 import 'package:minimalist/repository/signup_repository.dart';
 import 'package:minimalist/repository/user_repository.dart';
-import 'package:minimalist/veiw/homeScreen.dart';
 
 class OtpScreen extends StatefulWidget {
   final String? name;
@@ -32,6 +31,8 @@ class _OtpScreenState extends State<OtpScreen> {
       final otp = _otpController.text;
 
       context.read<ErrorBloc>().add(ClearError());
+      context.read<LoadingBloc>().add(StartLoading());
+
       try {
         if (widget.process == 'signup') {
           await signupRepository(
@@ -51,12 +52,16 @@ class _OtpScreenState extends State<OtpScreen> {
       } catch (e) {
         // Set error on failure
         context.read<ErrorBloc>().add(SetError(e.toString()));
+      } finally {
+        context.read<LoadingBloc>().add(StopLoading());
       }
     }
   }
 
   void _resendOtp() async {
     context.read<ErrorBloc>().add(ClearError());
+    context.read<LoadingBloc>().add(StartLoading());
+
     try {
       await otpRepository(
         context: context,
@@ -68,6 +73,8 @@ class _OtpScreenState extends State<OtpScreen> {
     } catch (e) {
       // Set error on failure
       context.read<ErrorBloc>().add(SetError(e.toString()));
+    } finally {
+      context.read<LoadingBloc>().add(StopLoading());
     }
   }
 
@@ -120,13 +127,21 @@ class _OtpScreenState extends State<OtpScreen> {
                 },
               ),
               SizedBox(height: 40), // Increased space between elements
-              OutlinedButton(
-                onPressed: _submit,
-                child: Text('Submit', style: TextStyle(color: Colors.white)),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: Colors.white),
-                  padding: EdgeInsets.symmetric(vertical: 16.0),
-                ),
+              BlocBuilder<LoadingBloc, LoadingState>(
+                builder: (context, state) {
+                  if (state is LoadingInProgress) {
+                    return Center(child: CircularProgressIndicator());
+                  }
+                  return OutlinedButton(
+                    onPressed: _submit,
+                    child:
+                        Text('Submit', style: TextStyle(color: Colors.white)),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: Colors.white),
+                      padding: EdgeInsets.symmetric(vertical: 16.0),
+                    ),
+                  );
+                },
               ),
               SizedBox(height: 20),
               BlocBuilder<OtpBloc, OtpState>(

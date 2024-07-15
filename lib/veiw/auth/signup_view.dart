@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:minimalist/blocs/error/error_bloc.dart';
+import 'package:minimalist/blocs/loading/loading_bloc.dart';
 import 'package:minimalist/repository/otp_repository.dart';
 import 'package:minimalist/repository/user_repository.dart';
 import 'package:minimalist/veiw/auth/login_view.dart';
-import 'package:minimalist/veiw/auth/otp_view.dart';
-import 'package:provider/provider.dart'; // Import your ErrorBloc
+import 'package:provider/provider.dart';
 
 class SignupScreen extends StatefulWidget {
   @override
@@ -23,6 +23,8 @@ class _SignupScreenState extends State<SignupScreen> {
       final phone = _phoneController.text;
 
       context.read<ErrorBloc>().add(ClearError());
+      context.read<LoadingBloc>().add(StartLoading());
+
       try {
         await otpRepository(
           context: context,
@@ -30,10 +32,12 @@ class _SignupScreenState extends State<SignupScreen> {
           name: name,
           phone: '+91' + phone,
         );
-        // Clear error on success
+        // Handle success scenario
       } catch (e) {
         // Set error on failure
         context.read<ErrorBloc>().add(SetError(e.toString()));
+      } finally {
+        context.read<LoadingBloc>().add(StopLoading());
       }
     }
   }
@@ -96,14 +100,21 @@ class _SignupScreenState extends State<SignupScreen> {
                 },
               ),
               SizedBox(height: 40),
-              OutlinedButton(
-                onPressed: _submit,
-                child: Text('Submit', style: TextStyle(color: Colors.white)),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: Colors.white),
-                  padding: EdgeInsets.symmetric(vertical: 16.0),
-                ),
+              BlocBuilder<LoadingBloc, LoadingState>(
+                builder: (context, state) {
+                  return OutlinedButton(
+                    onPressed: state is LoadingInProgress ? null : _submit,
+                    child: state is LoadingInProgress
+                        ? CircularProgressIndicator()
+                        : Text('Submit', style: TextStyle(color: Colors.white)),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: Colors.white),
+                      padding: EdgeInsets.symmetric(vertical: 16.0),
+                    ),
+                  );
+                },
               ),
+              SizedBox(height: 20),
               BlocBuilder<ErrorBloc, ErrorState>(
                 builder: (context, state) {
                   if (state is ErrorMessage) {
@@ -121,6 +132,8 @@ class _SignupScreenState extends State<SignupScreen> {
               SizedBox(height: 20),
               TextButton(
                 onPressed: () {
+                  context.read<ErrorBloc>().add(ClearError());
+
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (context) => LoginScreen()),

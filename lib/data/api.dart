@@ -14,10 +14,13 @@ class userData {
     final url = Uri.parse('$baseUrl/$endurl');
 
     try {
+      print('ayush Bearer ${_myBox.get('token')}');
       final response = await http.get(url, headers: {
-        'Authorization': 'Bearer ${_myBox.get('token')}',
+        'Authorization': '${_myBox.get('token')}',
         'Content-Type': 'application/json',
       });
+      final responseBody = jsonDecode(response.body);
+      print(responseBody.toString() + "subhi");
       return response;
     } catch (e) {
       if (e is SocketException) {

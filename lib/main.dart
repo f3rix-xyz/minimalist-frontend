@@ -4,6 +4,7 @@ import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:minimalist/blocs/error/error_bloc.dart';
 import 'package:minimalist/blocs/loadApp/app_bloc.dart';
+import 'package:minimalist/blocs/loading/loading_bloc.dart';
 import 'package:minimalist/blocs/otpTimer/timer_bloc.dart';
 import 'package:minimalist/data/api.dart';
 import 'package:minimalist/repository/checkuser_repository.dart';
@@ -31,6 +32,7 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (context) => AppBloc()..add(LoadApps())),
           BlocProvider(create: (context) => ErrorBloc()..add(ClearError())),
           BlocProvider(create: (context) => OtpBloc()),
+          BlocProvider(create: (context) => LoadingBloc()),
         ],
         child: MaterialApp(
           title: 'Flutter Demo',

@@ -5,39 +5,43 @@ class SubscriptionScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: Text(
-          'Subscription Plans',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
+    return WillPopScope(
+      onWillPop: () async => false, // Disable back button
+      child: Scaffold(
         backgroundColor: Colors.black,
-        iconTheme: IconThemeData(color: Colors.white),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SubscriptionBox(
-              title: 'Monthly Plan',
-              price: '₹199',
-              description: 'Per month',
-              onTap: () {
-                // Handle monthly plan selection
-              },
-            ),
+        appBar: AppBar(
+          title: Text(
+            'Subscription Plans',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
-          Expanded(
-            child: SubscriptionBox(
-              title: 'Yearly Plan',
-              price: '₹1999',
-              description: 'Per year',
-              onTap: () {
-                // Handle yearly plan selection
-              },
+          backgroundColor: Colors.black,
+          iconTheme: IconThemeData(color: Colors.white),
+          automaticallyImplyLeading: false, // Remove the back button
+        ),
+        body: Column(
+          children: [
+            Expanded(
+              child: SubscriptionBox(
+                title: 'Monthly Plan',
+                price: '₹199',
+                description: 'Per month',
+                onTap: () {
+                  // Handle monthly plan selection
+                },
+              ),
             ),
-          ),
-        ],
+            Expanded(
+              child: SubscriptionBox(
+                title: 'Yearly Plan',
+                price: '₹1999',
+                description: 'Per year',
+                onTap: () {
+                  // Handle yearly plan selection
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

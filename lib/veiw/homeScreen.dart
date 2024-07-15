@@ -1,11 +1,15 @@
-import 'package:android_intent/android_intent.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:android_intent/android_intent.dart';
 import 'package:device_apps/device_apps.dart';
-
-import 'package:minimalist/veiw/appsScreen.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:minimalist/repository/checkuser_repository.dart';
+import 'package:minimalist/repository/fetchuser_repository.dart';
+import 'package:minimalist/repository/user_repository.dart';
+import 'package:minimalist/veiw/appsScreen.dart';
+import 'package:minimalist/veiw/auth/login_view.dart';
+import 'package:minimalist/veiw/subscriptionScreen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -33,12 +37,33 @@ class _HomeScreenState extends State<HomeScreen>
         _onLongPressComplete();
       }
     });
+
+    // Run checkUser as soon as the screen loads
+    checkUser(context).then((result) {
+      _navigateBasedOnUser(result);
+    });
   }
 
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  void _navigateBasedOnUser(String result) {
+    if (result == "home") {
+      // Already on the HomeScreen, no need to navigate
+    } else if (result == "subscription") {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => SubscriptionScreen()),
+      );
+    } else if (result == "login") {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => LoginScreen()),
+      );
+    }
   }
 
   void _onLongPressComplete() {
@@ -107,41 +132,47 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          // Clock Widget
-          Positioned(
-            top: 100,
-            left: 0,
-            right: 0,
-            child: GestureDetector(
-              onTapDown: (_) {
-                _startLoading();
-              },
-              onTapUp: (_) {
-                _stopLoading();
-              },
-              onTapCancel: () {
-                _stopLoading();
-              },
-              child: Center(
-                child: AnimatedContainer(
-                  duration: Duration(milliseconds: 200),
-                  curve: Curves.easeOut,
-                  alignment: Alignment.center,
-                  width: isPressing ? 220 : 200, // Adjusted size for the clock
-                  height: isPressing ? 220 : 200, // Adjusted size for the clock
-                  child: CustomPaint(
-                    size: Size(200, 200), // Adjusted size for the clock
-                    painter: ClockBorderPainter(_controller, isPressing),
-                    child: Center(
-                      child: Text(
-                        _getCurrentTime(),
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: isPressing ? 40 : 36, // Adjusted font size
+    return WillPopScope(
+      onWillPop: () async => false, // Disable back button
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: Stack(
+          children: [
+            // Clock Widget
+            Positioned(
+              top: 100,
+              left: 0,
+              right: 0,
+              child: GestureDetector(
+                onTapDown: (_) {
+                  _startLoading();
+                },
+                onTapUp: (_) {
+                  _stopLoading();
+                },
+                onTapCancel: () {
+                  _stopLoading();
+                },
+                child: Center(
+                  child: AnimatedContainer(
+                    duration: Duration(milliseconds: 200),
+                    curve: Curves.easeOut,
+                    alignment: Alignment.center,
+                    width:
+                        isPressing ? 220 : 200, // Adjusted size for the clock
+                    height:
+                        isPressing ? 220 : 200, // Adjusted size for the clock
+                    child: CustomPaint(
+                      size: Size(200, 200), // Adjusted size for the clock
+                      painter: ClockBorderPainter(_controller, isPressing),
+                      child: Center(
+                        child: Text(
+                          _getCurrentTime(),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize:
+                                isPressing ? 40 : 36, // Adjusted font size
+                          ),
                         ),
                       ),
                     ),
@@ -149,22 +180,22 @@ class _HomeScreenState extends State<HomeScreen>
                 ),
               ),
             ),
-          ),
-          // Contact Icon Widget
-          Positioned(
-            bottom: 80, // Adjusted position of the phone icon
-            left: 0,
-            right: 0,
-            child: GestureDetector(
-              onTap: _openContactsApp,
-              child: Icon(
-                Icons.phone,
-                color: Colors.white,
-                size: 50, // Adjusted size of the phone icon
+            // Contact Icon Widget
+            Positioned(
+              bottom: 80, // Adjusted position of the phone icon
+              left: 0,
+              right: 0,
+              child: GestureDetector(
+                onTap: _openContactsApp,
+                child: Icon(
+                  Icons.phone,
+                  color: Colors.white,
+                  size: 50, // Adjusted size of the phone icon
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
