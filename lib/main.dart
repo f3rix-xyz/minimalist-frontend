@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:minimalist/blocs/clock/clock_bloc.dart';
 import 'package:minimalist/blocs/error/error_bloc.dart';
 import 'package:minimalist/blocs/home/home_bloc.dart';
 import 'package:minimalist/blocs/home/home_event.dart';
@@ -35,6 +36,7 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (context) => OtpBloc()),
           BlocProvider(create: (context) => LoadingBloc()),
           BlocProvider(create: (context) => HomeBloc()..add(LoadHomeApps())),
+          BlocProvider(create: (context) => ClockBloc()),
         ],
         child: MaterialApp(
           title: 'Flutter Demo',

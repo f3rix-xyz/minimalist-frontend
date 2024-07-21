@@ -5,11 +5,13 @@ import 'package:intl/intl.dart';
 import 'package:device_apps/device_apps.dart';
 import 'package:minimalist/veiw/appsScreen.dart';
 import 'package:minimalist/veiw/auth/login_view.dart';
+import 'package:minimalist/veiw/settingScreen.dart';
 import 'package:minimalist/veiw/subscriptionScreen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../blocs/home/home_bloc.dart';
 import '../blocs/home/home_event.dart';
 import '../blocs/home/home_state.dart';
+import '../blocs/clock/clock_bloc.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -28,7 +30,7 @@ class _HomeScreenState extends State<HomeScreen>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: Duration(seconds: 10), // Set the duration here
+      duration: Duration(seconds: 15), // Default duration
     );
 
     _controller.addStatusListener((status) {
@@ -157,13 +159,21 @@ class _HomeScreenState extends State<HomeScreen>
                       size: Size(200, 200), // Adjusted size for the clock
                       painter: ClockBorderPainter(_controller, isPressing),
                       child: Center(
-                        child: Text(
-                          _getCurrentTime(),
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize:
-                                isPressing ? 40 : 36, // Adjusted font size
-                          ),
+                        child: BlocBuilder<ClockBloc, ClockState>(
+                          builder: (context, state) {
+                            if (state is ClockDurationSet) {
+                              _controller.duration =
+                                  Duration(seconds: state.duration);
+                            }
+                            return Text(
+                              _getCurrentTime(),
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize:
+                                    isPressing ? 40 : 36, // Adjusted font size
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ),
@@ -218,7 +228,7 @@ class _HomeScreenState extends State<HomeScreen>
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(
-                                            '${app.appName} removed from home screen'),
+                                            '${app!.appName} removed from home screen'),
                                       ),
                                     );
                                   },
@@ -249,6 +259,24 @@ class _HomeScreenState extends State<HomeScreen>
                     return Container();
                   }
                 },
+              ),
+            ),
+            // Settings Icon
+            Positioned(
+              top: 50,
+              right: 20,
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => SettingsScreen()),
+                  );
+                },
+                child: Icon(
+                  Icons.settings,
+                  color: Colors.white,
+                  size: 30,
+                ),
               ),
             ),
           ],
