@@ -1,15 +1,15 @@
-import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:android_intent/android_intent.dart';
-import 'package:device_apps/device_apps.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:minimalist/repository/checkuser_repository.dart';
-import 'package:minimalist/repository/fetchuser_repository.dart';
-import 'package:minimalist/repository/user_repository.dart';
+import 'package:intl/intl.dart';
+import 'package:device_apps/device_apps.dart';
 import 'package:minimalist/veiw/appsScreen.dart';
 import 'package:minimalist/veiw/auth/login_view.dart';
 import 'package:minimalist/veiw/subscriptionScreen.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../blocs/home/home_bloc.dart';
+import '../blocs/home/home_event.dart';
+import '../blocs/home/home_state.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -22,14 +22,13 @@ class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
   bool isPressing = false;
   late AnimationController _controller;
-  final int loadingDuration = 10; // Adjust this value to control the speed
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: Duration(seconds: loadingDuration), // Set the duration here
+      duration: Duration(seconds: 10), // Set the duration here
     );
 
     _controller.addStatusListener((status) {
@@ -38,10 +37,7 @@ class _HomeScreenState extends State<HomeScreen>
       }
     });
 
-    // Run checkUser as soon as the screen loads
-    checkUser(context).then((result) {
-      _navigateBasedOnUser(result);
-    });
+    context.read<HomeBloc>().add(LoadHomeApps()); // Load home apps on init
   }
 
   @override
@@ -51,9 +47,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _navigateBasedOnUser(String result) {
-    if (result == "home") {
-      // Already on the HomeScreen, no need to navigate
-    } else if (result == "subscription") {
+    if (result == "subscription") {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => SubscriptionScreen()),
@@ -67,7 +61,7 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _onLongPressComplete() {
-    print("Long press completed after $loadingDuration seconds");
+    print("Long press completed");
     Navigator.push(
       context,
       _createPageRoute(),
@@ -89,18 +83,15 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _openContactsApp() async {
-    // Check if the contacts app is installed (usually, it is by default)
     bool isInstalled = await DeviceApps.isAppInstalled('com.android.contacts');
 
     if (isInstalled) {
-      // Launch the contacts app using an intent
       AndroidIntent intent = AndroidIntent(
         action: 'android.intent.action.VIEW',
         data: 'content://contacts/people/',
       );
       await intent.launch();
     } else {
-      // Open contacts URL if available
       const url = 'content://contacts/people/';
       if (await canLaunchUrl(Uri.parse(url))) {
         await launchUrl(Uri.parse(url));
@@ -180,18 +171,84 @@ class _HomeScreenState extends State<HomeScreen>
                 ),
               ),
             ),
-            // Contact Icon Widget
+            // Contact Icon and Apps Widget
             Positioned(
-              bottom: 80, // Adjusted position of the phone icon
-              left: 0,
-              right: 0,
-              child: GestureDetector(
-                onTap: _openContactsApp,
-                child: Icon(
-                  Icons.phone,
-                  color: Colors.white,
-                  size: 50, // Adjusted size of the phone icon
-                ),
+              bottom: 150, // Adjusted position of the apps
+              left: 20, // Added padding from the left
+              child: BlocBuilder<HomeBloc, HomeState>(
+                builder: (context, state) {
+                  if (state is HomeLoading) {
+                    return CircularProgressIndicator();
+                  } else if (state is HomeLoaded) {
+                    final homeApps = state.homeApps;
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        GestureDetector(
+                          onTap: _openContactsApp,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(vertical: 10),
+                            child: Text(
+                              'Contacts',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 24, // Increased font size
+                              ),
+                            ),
+                          ),
+                        ),
+                        ...homeApps.map((packageName) {
+                          return FutureBuilder<Application?>(
+                            future: DeviceApps.getApp(packageName),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState ==
+                                      ConnectionState.done &&
+                                  snapshot.hasData) {
+                                final app = snapshot.data;
+                                return GestureDetector(
+                                  onTap: () {
+                                    DeviceApps.openApp(packageName);
+                                  },
+                                  onLongPress: () {
+                                    context
+                                        .read<HomeBloc>()
+                                        .add(RemoveHomeApp(packageName));
+
+                                    // Added SnackBar to show app removed message on long press
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                            '${app.appName} removed from home screen'),
+                                      ),
+                                    );
+                                  },
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(vertical: 10),
+                                    child: Text(
+                                      app!.appName,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 24, // Increased font size
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              } else {
+                                return CircularProgressIndicator();
+                              }
+                            },
+                          );
+                        }).toList(),
+                      ],
+                    );
+                  } else if (state is HomeError) {
+                    return Center(
+                        child: Text('Failed to load home apps',
+                            style: TextStyle(color: Colors.red)));
+                  } else {
+                    return Container();
+                  }
+                },
               ),
             ),
           ],

@@ -9,6 +9,7 @@ class AppBloc extends Bloc<AppEvent, AppState> {
   AppBloc() : super(AppInitial()) {
     on<LoadApps>(_onLoadApps);
     on<SearchApps>(_onSearchApps);
+    on<ResetSearch>(_onResetSearch);
   }
 
   void _onLoadApps(LoadApps event, Emitter<AppState> emit) async {
@@ -34,6 +35,13 @@ class AppBloc extends Bloc<AppEvent, AppState> {
               app.appName.toLowerCase().contains(event.query.toLowerCase()))
           .toList();
       emit(AppLoaded(apps: apps, filteredApps: filteredApps));
+    }
+  }
+
+  void _onResetSearch(ResetSearch event, Emitter<AppState> emit) {
+    if (state is AppLoaded) {
+      final apps = (state as AppLoaded).apps;
+      emit(AppLoaded(apps: apps));
     }
   }
 }

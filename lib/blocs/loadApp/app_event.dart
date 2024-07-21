@@ -17,3 +17,5 @@ class SearchApps extends AppEvent {
   @override
   List<Object> get props => [query];
 }
+
+class ResetSearch extends AppEvent {}
