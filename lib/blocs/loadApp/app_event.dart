@@ -19,3 +19,11 @@ class SearchApps extends AppEvent {
 }
 
 class ResetSearch extends AppEvent {}
+
+class AppUninstalled extends AppEvent {
+  final Application app;
+
+  AppUninstalled(this.app);
+  @override
+  List<Object> get props => [app];
+}

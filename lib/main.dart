@@ -36,7 +36,8 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (context) => OtpBloc()),
           BlocProvider(create: (context) => LoadingBloc()),
           BlocProvider(create: (context) => HomeBloc()..add(LoadHomeApps())),
-          BlocProvider(create: (context) => ClockBloc()),
+          BlocProvider(
+              create: (context) => ClockBloc()..add(SetClockDuration(10))),
         ],
         child: MaterialApp(
           title: 'Flutter Demo',

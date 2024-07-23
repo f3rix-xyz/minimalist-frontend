@@ -2,6 +2,8 @@ import 'package:device_apps/device_apps.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive/hive.dart';
+import 'package:android_intent/android_intent.dart';
+import 'package:android_intent/flag.dart';
 import 'package:minimalist/blocs/home/home_event.dart';
 import '../blocs/loadApp/app_bloc.dart';
 import '../blocs/home/home_bloc.dart';
@@ -53,28 +55,8 @@ class AppScreen extends StatelessWidget {
                       onTap: () {
                         DeviceApps.openApp(app.packageName);
                       },
-                      onLongPress: () async {
-                        var box = await Hive.openBox('myBox');
-                        List<String> homeApps = List<String>.from(
-                            box.get('homeApps', defaultValue: []));
-                        if (!homeApps.contains(app.packageName)) {
-                          context
-                              .read<HomeBloc>()
-                              .add(AddHomeApp(app.packageName));
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content:
-                                  Text('${app.appName} added to home screen'),
-                            ),
-                          );
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                  '${app.appName} is already on the home screen'),
-                            ),
-                          );
-                        }
+                      onLongPress: () {
+                        _showOptions(context, app);
                       },
                     );
                   },
@@ -91,6 +73,67 @@ class AppScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _showOptions(BuildContext context, Application app) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Container(
+          color: Colors.black,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(Icons.home, color: Colors.white),
+                title: Text('Add to home screen',
+                    style: TextStyle(color: Colors.white)),
+                onTap: () async {
+                  var box = await Hive.openBox('myBox');
+                  List<String> homeApps =
+                      List<String>.from(box.get('homeApps', defaultValue: []));
+                  if (!homeApps.contains(app.packageName)) {
+                    context.read<HomeBloc>().add(AddHomeApp(app.packageName));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content: Text('${app.appName} added to home screen')),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                          content: Text(
+                              '${app.appName} is already on the home screen')),
+                    );
+                  }
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.delete, color: Colors.white),
+                title: Text('Uninstall', style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  _uninstallApp(context, app);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _uninstallApp(BuildContext context, Application app) {
+    final packagename = app.packageName;
+    final intent = AndroidIntent(
+      action: 'android.intent.action.DELETE',
+      data: Uri.encodeFull('package:$packagename'),
+      flags: <int>[Flag.FLAG_ACTIVITY_NEW_TASK],
+    );
+    intent.launch().then((_) {
+      print("ok");
+      context.read<AppBloc>().add(AppUninstalled(app));
+      Navigator.pop(context); // Close the bottom sheet
+    });
   }
 }
 

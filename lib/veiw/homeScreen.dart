@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:device_apps/device_apps.dart';
 import 'package:minimalist/veiw/appsScreen.dart';
 import 'package:minimalist/veiw/auth/login_view.dart';
+import 'package:minimalist/veiw/launcher.dart';
 import 'package:minimalist/veiw/settingScreen.dart';
 import 'package:minimalist/veiw/subscriptionScreen.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -28,6 +29,7 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void initState() {
     super.initState();
+    promptSetDefaultLauncher();
     _controller = AnimationController(
       vsync: this,
       duration: Duration(seconds: 15), // Default duration
